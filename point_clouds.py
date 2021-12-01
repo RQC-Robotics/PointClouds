@@ -123,7 +123,7 @@ class PointCloudGenerator(object):
         self.img_width = 640
         self.img_height = 480
 
-        self.cam_names = [-1]
+        self.cam_names = [0]
 
         self.target_bounds=None
         if min_bound != None and max_bound != None:
