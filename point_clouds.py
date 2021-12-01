@@ -156,7 +156,7 @@ class PointCloudGenerator(object):
             od_cammat = cammat2o3d(self.cam_mats[cam_i], self.img_width, self.img_height)
             od_depth = o3d.geometry.Image(depth_img)
             
-            o3d_cloud = o3d.geometry.PointCloud.create_from_depth_image(od_depth, od_cammat, depth_trunc=0.1)
+            o3d_cloud = o3d.geometry.PointCloud.create_from_depth_image(od_depth, od_cammat, depth_trunc=0.0001)
             
             print(o3d_cloud)
 
