@@ -122,6 +122,7 @@ class PointCloudGenerator(object):
         # I think these can be set to anything
         self.img_width = 640
         self.img_height = 480
+        self.trunc = 1000
 
         self.cam_names = [0]
 
@@ -156,7 +157,7 @@ class PointCloudGenerator(object):
             od_cammat = cammat2o3d(self.cam_mats[cam_i], self.img_width, self.img_height)
             od_depth = o3d.geometry.Image(depth_img)
             
-            o3d_cloud = o3d.geometry.PointCloud.create_from_depth_image(od_depth, od_cammat, depth_trunc=0.0001)
+            o3d_cloud = o3d.geometry.PointCloud.create_from_depth_image(od_depth, od_cammat, depth_trunc=self.trunc)
             
             print(o3d_cloud)
 
