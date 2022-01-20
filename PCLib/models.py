@@ -1,4 +1,4 @@
-lass PCEncoder(Model):
+class PCEncoder(Model):
   def __init__(self, latent_dim, num_points, dims=(3, 64, 128)):
     super(PCEncoder, self).__init__()
     self.latent_dim = latent_dim
