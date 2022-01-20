@@ -1,3 +1,8 @@
+import tensorflow as tf
+from tensorflow.keras import layers
+from tensorflow.keras import regularizers
+from tensorflow.keras.models import Model
+
 class PCEncoder(Model):
   def __init__(self, latent_dim, num_points, dims=(3, 64, 128)):
     super(PCEncoder, self).__init__()
