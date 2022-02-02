@@ -16,7 +16,6 @@ class PointCloudGenerator(object):
         self.width = image_width
         
 
-
         if isinstance(cam_matrix, type(None)):
             self.cam_matrix = []
             for i in range(len(camera_fovy)):
@@ -26,12 +25,6 @@ class PointCloudGenerator(object):
 
         else:
             self.cam_matrix = torch.tensor(self.cam_matrix, dtype=torch.float32, device=self.device, requires_grad=False)
-
-
-    
-       
-        
-        
 
 
         self.uv1 = torch.ones((self.height, self.width, 3), dtype=torch.float32, device=self.device, requires_grad=False)
@@ -60,9 +53,6 @@ class PointCloudGenerator(object):
             self.res_mat[i] = torch.matmul(self.res_mat[i], self.swap_x.T)
         
         
-
-
-
 
 
 
