@@ -26,7 +26,7 @@ def compile_and_fit(model, name, dataset, logdir, lr = 0.001,batch_size=64, opti
 
   history = model.fit(
       dataset,
-      batch_size=batch_size
+      batch_size=batch_size,
       epochs=max_epochs,
       validation_split=0.1,
       callbacks=get_callbacks(name, logdir),
