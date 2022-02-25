@@ -48,3 +48,16 @@ class PCDecoder(Model):
     
   def call(self, x):
       return self.sequential(x)
+    
+class AutoEncoder(Model):
+  def __init__(self, latent_dim, num_points, enc_dims=(3, 64, 128), dec_dims=(128, 256, 3)):
+    super(AutoEncoder, self).__init__()
+    self.latent_dim = latent_dim
+    self.num_points = num_points
+    self.encoder = PCEncoder(self.latent_dim, self.num_points, dims=enc_dims)
+    self.decoder = PCDecoder(self.latent_dim, self.num_points, dims=dec_dims)
+
+  def call(self, x):
+    encoded = self.encoder(x)
+    decoded = self.decoder(encoded)
+    return decoded
