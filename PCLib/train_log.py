@@ -16,20 +16,17 @@ def get_callbacks(name, logdir):
   ]
   
   
-def compile_and_fit(model, name, pc_data, logdir, lr = 0.001,batch_size=64, optimizer=None, max_epochs=100):
+def compile_and_fit(model, name, dataset, logdir, lr = 0.001,batch_size=64, optimizer=None, max_epochs=100):
   if optimizer is None:
     optimizer = get_optimizer(lr)
+    
   model.compile(optimizer=optimizer, 
                 loss=chamfer_distance.evaluate)
   model.summary()
 
-  n_train = pc_data.shape[0]
-  steps_per_epoch = n_train//batch_size
-
   history = model.fit(
-      pc_data,
-      pc_data,
-      steps_per_epoch = steps_per_epoch,
+      dataset,
+      batch_size=batch_size
       epochs=max_epochs,
       validation_split=0.1,
       callbacks=get_callbacks(name, logdir),
