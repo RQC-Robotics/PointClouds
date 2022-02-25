@@ -3,9 +3,6 @@ from tensorflow.keras import layers
 from tensorflow.keras import regularizers
 from tensorflow.keras.models import Model
 from tensorflow_graphics.nn.loss import chamfer_distance
-import tensorflow_docs as tfdocs
-import tensorflow_docs.modeling
-import tensorflow_docs.plots
 
 
 def get_optimizer(lr):
