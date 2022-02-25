@@ -16,7 +16,7 @@ def get_callbacks(name, logdir):
   ]
   
   
-def compile_and_fit(model, name, dataset, logdir, lr = 0.001,batch_size=64, optimizer=None, max_epochs=100):
+def compile_and_fit(model, name, train_dataset, validation_dataset, logdir, lr = 0.001,batch_size=64, optimizer=None, max_epochs=100):
   if optimizer is None:
     optimizer = get_optimizer(lr)
     
@@ -25,10 +25,10 @@ def compile_and_fit(model, name, dataset, logdir, lr = 0.001,batch_size=64, opti
   model.summary()
 
   history = model.fit(
-      dataset,
+      train_dataset,
       batch_size=batch_size,
       epochs=max_epochs,
-      validation_split=0.1,
+      validation_data=validation_dataset,
       callbacks=get_callbacks(name, logdir),
       verbose=1)
   return history
