@@ -8,9 +8,9 @@ class PCEncoder(Model):
     super(PCEncoder, self).__init__()
     self.latent_dim = latent_dim
     self.num_points = num_points
-    self.c1 = layers.Conv1D(64,  1, activation='relu', input_shape=(None, num_points, dims[0]))
-    self.c2 = layers.Conv1D(128, 1, activation='relu', input_shape=(None, num_points, dims[1]))
-    self.c3 = layers.Conv1D(latent_dim, 1, activation='relu', input_shape=(None, num_points, dims[2]))
+    self.c1 = layers.Conv1D(64,  1, activation='relu', input_shape=(num_points, dims[0]))
+    self.c2 = layers.Conv1D(128, 1, activation='relu', input_shape=(num_points, dims[1]))
+    self.c3 = layers.Conv1D(latent_dim, 1, activation='relu', input_shape=(num_points, dims[2]))
 
     self.bn1 = layers.BatchNormalization()
     self.bn2 = layers.BatchNormalization()
