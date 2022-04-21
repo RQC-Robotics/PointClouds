@@ -1,3 +1,5 @@
+from lib2to3.pgen2.tokenize import TokenError
+from os import device_encoding
 import torch
 import math
 import numpy as np
@@ -16,6 +18,7 @@ class PointCloudGenerator(object):
         self.width = image_width
         
 
+
         if isinstance(cam_matrix, type(None)):
             self.cam_matrix = []
             for i in range(len(camera_fovy)):
@@ -27,6 +30,12 @@ class PointCloudGenerator(object):
             self.cam_matrix = torch.tensor(self.cam_matrix, dtype=torch.float32, device=self.device, requires_grad=False)
 
 
+    
+       
+        
+        
+
+
         self.uv1 = torch.ones((self.height, self.width, 3), dtype=torch.float32, device=self.device, requires_grad=False)
         for i in range(self.height):
             for j in range(self.width):
@@ -36,7 +45,7 @@ class PointCloudGenerator(object):
         self.uv1 = self.uv1.flip(0)        
         self.uv1 = self.uv1.reshape(-1, 3)
 
-
+        print(self.uv1)
 
         self.inverse_cam_matrix = []
 
@@ -52,7 +61,10 @@ class PointCloudGenerator(object):
             self.res_mat.append(torch.matmul(self.uv1, self.inverse_cam_matrix[i].T))
             self.res_mat[i] = torch.matmul(self.res_mat[i], self.swap_x.T)
         
-        
+
+
+
+
 
 
 
@@ -101,3 +113,19 @@ class PointCloudGenerator(object):
             xyz_mas.append(xyz)
 
         return torch.cat(xyz_mas, dim=0)
+
+
+    def get_projection(self, points, camera_matrix, rot_matrix=None, position=None):
+        
+        rot_matrix = torch.tensor(rot_matrix, dtype=torch.float32, device=self.device).reshape((-1,3,3))
+        position = torch.tensor(position, dtype=torch.float32, device=self.device)
+        camera_matrix = torch.tensor(camera_matrix, dtype=torch.float32, device=self.device)
+
+        uv1 = points - position
+        uv1 = torch.matmul(uv1, rot_matrix)
+        uv1 = torch.matmul(uv1, self.swap_x)
+        uv1 = torch.matmul(uv1, camera_matrix.T)
+        depth = uv1[:,:,2]
+        uv1[:,:,0] = uv1[:,:,0] / depth - 1
+        uv1[:,:,1] = uv1[:,:,1] / depth - 1
+        return torch.cat((torch.tensor(uv1[:,:,0].T, dtype=torch.int32), torch.tensor(uv1[:,:,1].T, dtype=torch.int32), depth.T), dim=-1)
