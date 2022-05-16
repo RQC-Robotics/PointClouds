@@ -1,3 +1,6 @@
+from curses import tparm
+from turtle import forward
+from importlib_metadata import re
 import torch
 from torch._C import dtype
 import torch.nn as nn
@@ -6,6 +9,14 @@ from torch.distributions.normal import Normal
 import torch.nn.functional as F
 from torch.nn.modules import loss
 from torch.nn.modules.linear import Linear 
+import time
+
+import sys
+sys.path.append('/home/albert/Desktop/Work/SAC_PC/Point-Spatio-Temporal-Convolution/modules')
+
+import pst_convolutions as pst
+
+
 
 LOG_STD_MAX = 2
 LOG_STD_MIN = -20
@@ -30,7 +41,9 @@ class MLPEncoder(nn.Module):
         )
 
     def forward(self, state):
-        return self.net(state)
+
+        x = self.net(state)
+        return x
 
 
 class ConvEncoder(nn.Module):
@@ -79,24 +92,40 @@ class PointCloudEncoder(nn.Module):
         self.num_filters = num_filters
         self.hid_size = hid_size
 
+        # self.net = nn.Sequential(
+        #     nn.Conv1d(3, num_filters, 1), nn.BatchNorm1d(num_filters),
+        #     nn.Conv1d(num_filters, 2*num_filters, 1), nn.BatchNorm1d(2*num_filters),
+        #     nn.Conv1d(2*num_filters, hid_size, 1), nn.BatchNorm1d(hid_size),
+        # )
+
+
         self.net = nn.Sequential(
-            nn.Conv1d(3, num_filters, 1), nn.BatchNorm1d(num_filters),
-            nn.Conv1d(num_filters, 2*num_filters, 1), nn.BatchNorm1d(2*num_filters),
-            nn.Conv1d(2*num_filters, hid_size, 1), nn.BatchNorm1d(hid_size),
+            nn.Conv1d(3, num_filters, 1), nn.ReLU(),
+            nn.Conv1d(num_filters, 2*num_filters, 1), nn.ReLU(),
+            nn.Conv1d(2*num_filters, hid_size, 1), nn.ReLU(),
         )
+
 
         self.after_conv_size = hid_size
 
         self.mlp = nn.Sequential(
+            nn.Linear(self.after_conv_size, hid_size), nn.ReLU(),
             nn.Linear(hid_size, hid_size), nn.ReLU(),
+            # nn.Linear(hid_size, hid_size), nn.ReLU(),
         )
         
 
     def forward(self, state):
+        # print(state.shape)
         x = self.net(state)
-        x = torch.max(x, 2, keepdim=True)[0]
+        # print(x.shape)
+        x = torch.max(x, -1, keepdim=True)[0]
+        # print(x.shape)
         x = x.view(-1, self.hid_size)
+        # print(x.shape)
         x = self.mlp(x)
+        # print(x.shape)
+        # raise 'asdasdasd'
         return x
 
     def conv(self, state):
@@ -104,6 +133,118 @@ class PointCloudEncoder(nn.Module):
         x = torch.max(x, 2, keepdim=True)[0]
         x = x.view(-1, self.hid_size)
         return x
+
+# class PointCloudEncoder(nn.Module):
+#     def __init__(self, state_dim, num_filters, hid_size):
+#         super(PointCloudEncoder, self).__init__()
+#         self.state_dim = state_dim
+#         self.num_filters = num_filters
+#         self.hid_size = hid_size
+
+#         radius = 0.1
+#         nsamples = 1000/2
+        
+        
+
+#         self.conv1 =  pst.PSTConv(in_planes=0,
+#                               mid_planes=16,
+#                               out_planes=32,
+#                               spatial_kernel_size=[radius, 9],
+#                               temporal_kernel_size=1,
+#                               spatial_stride=2,
+#                               temporal_stride=1,
+#                               temporal_padding=[0,0],
+#                               )
+
+#         self.conv2 = pst.PSTConv(in_planes=32,
+#                               mid_planes=48,
+#                               out_planes=64,
+#                               spatial_kernel_size=[2*radius, 9],
+#                               temporal_kernel_size=3,
+#                               spatial_stride=2,
+#                               temporal_stride=1,
+#                               temporal_padding=[1,1],
+#                             )
+#                             #   spatial_aggregation="multiplication",
+#                             #   spatial_pooling="sum")
+
+#         self.conv3 = pst.PSTConv(in_planes=64,
+#                               mid_planes=96,
+#                               out_planes=128,
+#                               spatial_kernel_size=[2*2*radius, 9],
+#                               temporal_kernel_size=3,
+#                               spatial_stride=2,
+#                               temporal_stride=1,
+#                               temporal_padding=[1,1],
+#                               )
+
+#         self.conv4 = pst.PSTConv(in_planes=128,
+#                               mid_planes=192,
+#                               out_planes=256,
+#                               spatial_kernel_size=[2*2*2*radius, 9],
+#                               temporal_kernel_size=3,
+#                               spatial_stride=2,
+#                               temporal_stride=1,
+#                               temporal_padding=[1,1],
+#                               )
+
+
+#         self.after_conv_size = 256
+
+#         self.mlp = nn.Sequential(
+#             nn.Linear(self.after_conv_size, hid_size), nn.ReLU(),
+#             # nn.Linear(hid_size, hid_size), nn.ReLU(),
+#             # nn.Linear(hid_size, hid_size), nn.ReLU(),
+#         )
+        
+
+#     def forward(self, state):
+# #         print("Good start")
+#         x, f = self.conv1(state, None)
+#         f = F.relu(f)
+# #         print("Good 1")
+#         x, f = self.conv2(x, f)
+#         f = F.relu(f)
+# #         print("Good 2")
+#         x, f = self.conv3(x, f)
+#         f = F.relu(f)
+# #         print("Good 3")
+#         x, f = self.conv4(x, f)
+# #         print("Good 4")
+#         f = torch.mean(f, dim=-1, keepdim=False)
+# #         print("Good mean")
+#         f = torch.max(f, dim=1, keepdim=False)[0]
+# #         print("Good max")
+#         res = self.mlp(f)
+# #         print("Good mlp")
+#         return res
+
+#     def conv(self, state):
+#         x, f = self.conv1(state, None)
+#         f = F.relu(f)
+
+#         x, f = self.conv2(x, f)
+#         f = F.relu(f)
+
+#         x, f = self.conv3(x, f)
+#         f = F.relu(f)
+
+#         x, f = self.conv4(x, f)
+
+#         f = torch.mean(f, dim=-1, keepdim=False)
+
+#         f = torch.max(f, dim=1, keepdim=False)[0]
+
+#         return f
+
+
+
+
+
+
+
+
+
 
 
 
@@ -143,9 +284,11 @@ class Actor(nn.Module):
         x = self.enc(state)
         mu = self.mu(x)
         log_std = self.log_std(x)
+        log_std = torch.tanh(log_std)
 
         #Эвристика от OpenAI
-        log_std = torch.clamp(log_std, LOG_STD_MIN, LOG_STD_MAX)
+        # log_std = torch.clamp(log_std, LOG_STD_MIN, LOG_STD_MAX)
+        log_std = LOG_STD_MIN + 0.5 * (LOG_STD_MAX - LOG_STD_MIN) * (log_std + 1)
 
         std = torch.exp(log_std)
 
@@ -156,10 +299,10 @@ class Actor(nn.Module):
         else:
             action = distrib.rsample()
 
-        log_prob = distrib.log_prob(action).sum(axis=-1)
+        log_prob = distrib.log_prob(action).sum(axis=-1, keepdim=True)
 
         #Эвристика от OpenAI
-        log_prob -= (2 * (np.log(2) - action - F.softplus(-2 * action))).sum(axis=1)
+        log_prob -= (2 * (np.log(2) - action - F.softplus(-2 * action))).sum(axis=1, keepdim=True)
 
         action = torch.tanh(action)
 
@@ -236,7 +379,14 @@ class SACAgent(nn.Module):
         self.batch_size = batch_size
         self.gamma = gamma
         self.enc_type = enc_type
+        self.q1_grad = torch.tensor([0])
+        self.q2_grad = torch.tensor([0])
+        self.policy_grad = torch.tensor([0])
+        self.entropy = torch.tensor([0])
+        self.entropy_target = -self.act_dim
 
+        self.log_alpha = torch.tensor(np.log(alpha)).to(device)
+        self.log_alpha.requires_grad = True
 
         self.policy = Actor(state_dim, act_dim, hid_size, num_filters, enc_type).to(device)
         self.Q1 = Critic(state_dim, act_dim, hid_size, num_filters, enc_type).to(device)
@@ -254,6 +404,7 @@ class SACAgent(nn.Module):
         self.optim_policy = torch.optim.Adam(self.policy.parameters(), lr=lr)
         self.optim_Q1 = torch.optim.Adam(self.Q1.parameters(), lr=lr)
         self.optim_Q2 = torch.optim.Adam(self.Q2.parameters(), lr=lr)
+        self.optim_alpha = torch.optim.Adam([self.log_alpha], lr=lr)
 
     def _soft_update_net(self, net, net_target):
         for net_param, net_target_param in zip(net.parameters(), net_target.parameters()):
@@ -276,15 +427,19 @@ class SACAgent(nn.Module):
         return loss_q1, loss_q2
     
 
-    def compute_loss_policy(self, s):
+    def compute_loss_policy_and_alpha(self, s):
         a, log_prob_a = self.policy(s)
         q1 = self.Q1(s, a)
         q2 = self.Q2(s, a)
 
         q = torch.min(q1, q2)
+        self.entropy = -log_prob_a.mean()
+        
+        loss_policy = (self.log_alpha.exp().detach() * log_prob_a - q).mean()
 
-        loss_policy = (self.alpha * log_prob_a - q).mean()  # ПОЧЕМУ НЕТ НИГДЕ DETACH()???
-        return loss_policy
+        loss_alpha = (self.log_alpha.exp() * (-log_prob_a - self.entropy_target).detach()).mean()  
+
+        return loss_policy, loss_alpha
 
     def update(self, s, a, r, s_next, d):
         loss_q1, loss_q2 = self.compute_loss_Q(s, a, r, s_next, d)
@@ -292,23 +447,35 @@ class SACAgent(nn.Module):
         self.optim_Q1.zero_grad()
         loss_q1.backward()
         # МЕСТО ПОД GRAD_NORM
+
+        self.q1_grad = torch.nn.utils.clip_grad_norm_(self.Q1.parameters(), max_norm=10)
+        
         self.optim_Q1.step()
 
         self.optim_Q2.zero_grad()
         loss_q2.backward()
         # МЕСТО ПОД GRAD_NORM
+
+        self.q2_grad = torch.nn.utils.clip_grad_norm_(self.Q2.parameters(), max_norm=10)
+
         self.optim_Q2.step()       
         
         for p1, p2 in zip(self.Q1.parameters(), self.Q2.parameters()):
             p1.requires_grad = False
             p2.requires_grad = False
 
-        loss_policy = self.compute_loss_policy(s)
+        loss_policy, loss_alpha = self.compute_loss_policy_and_alpha(s)
         
         self.optim_policy.zero_grad()
         loss_policy.backward()
         # МЕСТО ПОД GRAD_NORM
+        self.policy_grad = torch.nn.utils.clip_grad_norm_(self.policy.parameters(), max_norm=10)
         self.optim_policy.step()
+
+        self.optim_alpha.zero_grad()
+        loss_alpha.backward()
+        self.optim_alpha.step()
+
 
         for p1, p2 in zip(self.Q1.parameters(), self.Q2.parameters()):
             p1.requires_grad = True
@@ -324,7 +491,7 @@ class SACAgent(nn.Module):
         self.Q2.zero_grad()
     def get_action(self, s, determ=False):
         with torch.no_grad():
-            a, _ = self.policy(torch.as_tensor(s, dtype=torch.float32, device=self.device), determ)
+            a, _ = self.policy(torch.as_tensor(np.array(s), dtype=torch.float32, device=self.device), determ)
         return a
 
     # def eval - НУ ВДРУГ НАДО 
